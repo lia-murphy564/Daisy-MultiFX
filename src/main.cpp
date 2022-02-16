@@ -4,7 +4,10 @@
  * Author: Lia Murphy
  */
 
-#include "main.h"
+
+#include "daisy.h"
+#include "daisysp.h"
+#include "daisy_seed.h"
 
 using namespace daisy;
 using namespace daisy::seed;
@@ -13,9 +16,6 @@ using namespace daisy::seed;
 
 #define BUFFER_SIZE_AUDIO	1024
 #define BUFFER_SIZE_PARAM	10
-
-
-
 
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
@@ -28,7 +28,6 @@ using namespace daisy::seed;
   (byte & 0x04 ? '1' : '0'), \
   (byte & 0x02 ? '1' : '0'), \
   (byte & 0x01 ? '1' : '0') 
-
 
 
 DaisySeed hw;

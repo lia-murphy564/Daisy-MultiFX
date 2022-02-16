@@ -1,5 +1,5 @@
 # Project Name
-TARGET = test2
+TARGET = Daisy-MultiFx
 
 # Sources
 CPP_SOURCES = src/main.cpp
