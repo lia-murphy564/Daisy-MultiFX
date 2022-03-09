@@ -1,9 +1,8 @@
-#include <iostream>
+
 #include <string>
 #include <vector>
 #include <queue>
 #include "json.hpp"
-#include <iostream>
 #include <iomanip>
 
 using json = nlohmann::json;
@@ -83,7 +82,7 @@ struct param {
     int index;
 
     void print() {
-        std::cout << index << " " << label << " " << type << " " << val << "\n";
+        //std::cout << index << " " << label << " " << type << " " << val << "\n";
     }
 
     bool operator<(const param& p) const
@@ -117,7 +116,7 @@ public:
     }
     void print_tree() {
         while (!pq.empty()) {
-            std::cout << pq.top().index << " " << pq.top().label << " " << pq.top().type << " " << pq.top().val << "\n";
+            //std::cout << pq.top().index << " " << pq.top().label << " " << pq.top().type << " " << pq.top().val << "\n";
             pq.pop();
         }
     }
@@ -126,6 +125,8 @@ public:
     }
     int get_num_params() { return num_params; }
     void set_num_params(int n) { num_params = n; }
+
+    //param get_param(int i) { return pq.; }
 
 };
 
@@ -164,7 +165,15 @@ class ParameterController {
         void set_data_gpio(json j) { data_gpio = j; }
         void set_data_ble(json j) { data_ble = j; }
 
+        param* get_parameter(int i) {
+            param* curr = data.value;
+        }
+
         //void set_num_params(int n) { num_params = n; }
+
+        std::string print_tree() {
+            
+        }
 
         void update_parameters() {
 
