@@ -16,3 +16,7 @@ build/test2.map
 .vscode/settings.json
 .vscode/STM32H750x.svd
 .vscode/tasks.json
+build/Daisy-MultiFx.bin
+build/Daisy-MultiFx.elf
+build/Daisy-MultiFx.map
+build/Daisy-MultiFx.hex
