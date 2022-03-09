@@ -4,36 +4,46 @@
  * Author: Lia Murphy
  */
 
-#include <iostream>
+//#include <iostream>
 #include <vector>
 
 #include "daisy.h"
 #include "daisysp.h"
 #include "daisy_seed.h"
+#include "stm32h7xx_hal.h
 
-#include "json.hpp"
-#include "parameter.h"
+//#include "inc/json.hpp"
+//#include "parameter.h"
 #include "parameter_controller.h"
+#include "audiohandler.h"
 
 using namespace daisy;
 using namespace daisy::seed;
-using json = nlohmann::json;
+//using json = nlohmann::json;
 
 #define PARAM_BUFFER_SIZE	10
 #define AUDIO_BUFFER_SIZE	128
+#define HTIM1_MS	100
 
 daisy::DaisySeed hw;
 
 daisy::UartHandler usart1;
+daisy::TimerHandle htim1;
+daisy::GPIO gpio;
 
-// void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size)
-// {
-// 	for (size_t i = 0; i < size; i++)
-// 	{
-// 		out[0][i] = in[0][i];
-// 		out[1][i] = in[1][i];
-// 	}
-// }
+static uint32_t DSY_SDRAM_BSS audio_buffer[AUDIO_BUFFER_SIZE];
+static uint16_t DSY_SDRAM_BSS param_buffer[PARAM_BUFFER_SIZE];
+
+AudioHandler audio;
+
+void TIM1_Init(daisy::TimerHandle& tim) {
+	daisy::TimerHandle::Config conf;
+	conf.periph = daisy::TimerHandle::Config::Peripheral::TIM_2;
+	conf.dir = daisy::TimerHandle::Config::CounterDir::UP;
+	tim.Init(conf);
+	tim.DelayMs(HTIM1_MS);
+	tim.Start();
+}
 
 void UART_Init(daisy::UartHandler &uart) {
 	daisy::UartHandler::Config usart1_conf;
@@ -48,77 +58,56 @@ void UART_Init(daisy::UartHandler &uart) {
 
 	if (uart.Init(usart1_conf) == UartHandler::Result::ERR) {
 		hw.PrintLine("Init error");
-		//return daisy::UartHandler::CheckError
-
-		
+		//return daisy::UartHandler::CheckError	
 	}
-
 
 	if (uart.StartRx() == UartHandler::Result::ERR) {
 		hw.PrintLine("StartRx error");
 	}
-
-
 }
 
-ParameterTree pt;
+void AudioCallback(daisy::AudioHandle::InputBuffer in, daisy::AudioHandle::OutputBuffer out, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+		out[0][i] = audio.processAudioSample(in[0][i]);
+		out[1][i] = audio.processAudioSample(in[1][i]);
+
+    }
+} 
 
 int main(void)
 {
 	hw.Init();
 	hw.SetAudioBlockSize(4); // number of samples handled per callback
 	hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
-	//hw.StartAudio(AudioCallback);
+	hw.StartAudio(AudioCallback);
 	hw.StartLog(true);
-
+	
 	UART_Init(usart1);
-
-
-	uint8_t buffer[buffer_size];
-
-	for (int i=0; i < buffer_size; i++)
-    	buffer[i] = 0;
+	TIM1_Init(htim1);
+	std::vector<uint32_t> paramBuf;
+	ParameterTree pt;
 
 	while (true) {
 
-		// recieve parameter json from uart
-		usart1.PollReceive(buffer, buffer_size, 10);
-		// for (int i = 0; i < buffer_size; i++) {
-		// 	hw.Print("%c", buffer[i]);
-		// }
+		while (usart1.Readable()) {
 
-		// decode from json into parameter struct
-		json data = buffer;
-		param param_uart;
-		param_uart.label = data.value("label", "");
-		param_uart.type = data.value("type", "");
-		param_uart.val = data.value("val", 0);
+			uint32_t val = usart1.PopRx();
+			paramBuf.push_back(val);
+			//hw.Print(val);
+	
+			if (!usart1.Readable()) {
+				usart1.FlushRx();
+			}
 
-		// read hardware gpio parameters
-		#define HW_PARAM_1 17 // this is the daisy pin number
-		dsy_gpio hw_param;
-		hw_param.pin  = hw.GetPin(HW_PARAM_1);
-		hw_param.mode = DSY_GPIO_MODE_ANALOG;
-		hw_param.pull = DSY_GPIO_NOPULL;
-		dsy_gpio_init(&hw_param);
-		int val_hw = dsy_gpio_read(&hw_param);
-		// dsy_gpio_write(&gate_output, true);  // set high
-		// dsy_gpio_write(&gate_output, false); // set low
-		param param_gpio;
-		param_gpio.label = "pot0";
-		param_gpio.type = "pot";
-		param_gpio.val = 50;
-
-		// check if parameters match
-		if (param_gpio.label != param_uart.label && param_gpio.type != param_uart.type && param_gpio.val != param_uart.val) {
-			// if not match then update parameter tree
-			param update = param_gpio;// || param_uart;
-			//parameterTree.push_parameter(param_uart, data.value);
-			//parameterTree.update();
+			hw.DelayMs(10);
 		}
 
+		while (!paramBuf.empty()) {
+			uint32_t curr = paramBuf.back();
+			paramBuf.pop_back();
+		}
 
-
-		//hw.DelayMs(10);
 	}
 }
